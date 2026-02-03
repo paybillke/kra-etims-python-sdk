@@ -1,0 +1,9 @@
+[project]
+name = "kra-etims-sdk"
+version = "0.1.0"
+description = "KRA eTIMS Python SDK"
+dependencies = ["requests", "pydantic"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
