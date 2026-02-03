@@ -1,9 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "kra-etims-sdk"
 version = "0.1.0"
-description = "KRA eTIMS Python SDK"
-dependencies = ["requests", "pydantic"]
+description = "Python SDK for KRA eTIMS OSCU API"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "Emmanuel Bartile" }
+]
+keywords = ["KRA", "eTIMS", "OSCU", "Kenya", "Tax"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
 
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+dependencies = [
+  "requests>=2.31.0",
+  "pydantic>=2.5"
+]
+
+[project.urls]
+Homepage = "https://github.com/paybillke/kra-etims-python-sdk"
+Issues = "https://github.com/paybillke/kra-etims-python-sdk/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["kra_etims_sdk*"]
