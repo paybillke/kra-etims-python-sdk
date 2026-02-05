@@ -11,12 +11,12 @@ class EtimsClient(BaseClient):
     def _validate(self, data: dict, schema: str) -> dict:
         return self.validator.validate(data, schema)
 
-    # -----------------------------
-    # INITIALIZATION (POSTMAN-COMPLIANT)
-    # -----------------------------
-    def initialize(self, data: dict) -> dict:
-        validated = self._validate(data, "initialization")
-        return self.post("initialize", validated)
+    def select_init_osdc_info(self, data: dict) -> dict:
+        """
+        Initialize the OSCU device with KRA.
+        Returns cmcKey and device information.
+        """
+        return self.post("selectInitOsdcInfo", self._validate(data, "initialization"))
 
     # -----------------------------
     # BASIC DATA ENDPOINTS

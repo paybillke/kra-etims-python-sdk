@@ -60,10 +60,10 @@ CONFIG = {
 
     "api": {
         "sbx": {
-            "base_url": "https://sbx.kra.go.ke/etims-oscu/api/v1",
+            "base_url": "https://etims-api-sbx.kra.go.ke/etims-api",
         },
         "prod": {
-            "base_url": "https://kra.go.ke/etims-oscu/api/v1",
+            "base_url": "https://etims-api.kra.go.ke/etims-api",
         },
     },
 
@@ -72,13 +72,14 @@ CONFIG = {
     },
 
     "oscu": {
-        "tin": os.getenv("KRA_TIN", "P000000002"),
-        "bhf_id": os.getenv("KRA_BHF_ID", "00"),
-        "cmc_key": "",
+        "tin": os.getenv("KRA_TIN", ""),
+        "bhf_id": os.getenv("KRA_BHF_ID", ""),
+        "cmc_key": os.getenv("CMC_KEY", ""),
+        "device_serial": os.getenv("DEVICE_SERIAL", ""),
     },
 
     "endpoints": {
-        "initialize": "/initialize",
+        "selectInitOsdcInfo": "/selectInitOsdcInfo",
         "selectCodeList": "/selectCodeList",
         "selectTaxpayerInfo": "/selectTaxpayerInfo",
         "selectNoticeList": "/selectNoticeList",
@@ -124,28 +125,26 @@ except AuthenticationException as e:
 header("STEP 2: OSCU INITIALIZATION")
 warning("Device serial MUST be pre-registered with KRA")
 
-DEVICE_SERIAL = "dvcv1130"  # 🔴 REPLACE WITH APPROVED SERIAL
-
 try:
     etims = EtimsClient(CONFIG, auth)
 
-    response = etims.initialize({
-        "tin": CONFIG["oscu"]["tin"],
-        "bhfId": CONFIG["oscu"]["bhf_id"],
-        "dvcSrlNo": DEVICE_SERIAL,
-    })
+    # response = etims.select_init_info({
+    #     "tin": CONFIG["oscu"]["tin"],
+    #     "bhfId": CONFIG["oscu"]["bhf_id"],
+    #     "dvcSrlNo": CONFIG["oscu"]["device_serial"],
+    # })
 
-    pprint(response)
+    # pprint(response)
 
-    cmc_key = response.get("cmcKey") or response.get("data", {}).get("cmcKey")
-    if not cmc_key:
-        raise RuntimeError("cmcKey missing from initialization response")
+    # cmc_key = response.get("cmcKey") or response.get("data", {}).get("info", {}).get("cmcKey")
+    # if not cmc_key:
+    #     raise RuntimeError("cmcKey missing from initialization response")
 
-    CONFIG["oscu"]["cmc_key"] = cmc_key
+    # success("Initialization successful")
+    # print("cmcKey:", cmc_key[:15], "...")
+
     etims = EtimsClient(CONFIG, auth)
 
-    success("Initialization successful")
-    print("cmcKey:", cmc_key[:15], "...")
 except ApiException as e:
     error(f"Initialization failed: {e}")
     pprint(e.details)
@@ -160,10 +159,10 @@ try:
         "bhfId": CONFIG["oscu"]["bhf_id"],
         "lastReqDt": format_date(),
     })
-
     count = len(response.get("itemList", []))
     success(f"Retrieved {count} code list items")
 except ApiException as e:
+    print("emm")
     error(str(e))
     sys.exit(1)
 

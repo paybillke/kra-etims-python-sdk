@@ -18,7 +18,7 @@
 
 A production-ready **Python SDK** for integrating with the Kenya Revenue Authority (KRA) **eTIMS OSCU** (Online Sales Control Unit) API. Built to match the official Postman collection specifications with strict header compliance, token management, and comprehensive Pydantic validation.
 
-> ⚠️ **Critical Note**: This SDK implements the **new OSCU specification** (KRA-hosted), *not* the legacy eTIMS API. OSCU requires device registration, headers, and `cmcKey` lifecycle management.
+> ⚠️ **Critical Note**: This SDK implements the **new OSCU specification** (KRA-hosted), *not* the VSCU eTIMS API. OSCU requires device registration, headers, and `cmcKey` lifecycle management.
 
 ## Author
 **Bartile Emmanuel**  
@@ -50,15 +50,15 @@ A production-ready **Python SDK** for integrating with the Kenya Revenue Authori
 
 ## Introduction to eTIMS OSCU
 
-KRA's **Electronic Tax Invoice Management System (eTIMS)** uses **OSCU** (Online Sales Control Unit) – a KRA-hosted software module that validates and signs tax invoices in real-time before issuance. Unlike legacy systems, OSCU requires:
+KRA's **Electronic Tax Invoice Management System (eTIMS)** uses **OSCU** (Online Sales Control Unit) – a KRA-hosted software module that validates and signs tax invoices in real-time before issuance. Unlike VSCU, OSCU requires:
 
 - Pre-registered device serial numbers (`dvcSrlNo`)
 - Communication key (`cmcKey`) lifecycle management
 - Strict payload schema compliance per KRA specifications
 
-### OSCU vs Legacy eTIMS
+### OSCU vs VSCU eTIMS
 
-| Feature | OSCU (This SDK) | Legacy eTIMS |
+| Feature | OSCU (This SDK) | VSCU eTIMS |
 |---------|-----------------|--------------|
 | **Hosting** | KRA-hosted (cloud) | Self-hosted (on-premise) |
 | **Device Registration** | Mandatory pre-registration | Not required |
@@ -175,7 +175,7 @@ Before integration, you **MUST** complete these prerequisites:
 ### 2. Communication Key Lifecycle
 ```python
 # 1. Initialize FIRST (returns cmcKey)
-response = etims.initialize({
+response = etims.select_init_osdc_info({
     "tin": config.oscu["tin"],
     "bhfId": config.oscu["bhf_id"],
     "dvcSrlNo": "dvcv1130",  # KRA-approved serial
@@ -293,7 +293,7 @@ config = KraEtimsConfig(
     
     endpoints={
         # INITIALIZATION (ONLY endpoint without tin/bhfId/cmcKey headers)
-        "initialize": "/initialize",
+        "selectInitOsdcInfo": "/selectInitOsdcInfo",
         
         # DATA MANAGEMENT
         "selectCodeList": "/selectCodeList",
@@ -363,12 +363,11 @@ except AuthenticationException as e:
 try:
     # ⚠️ MUST use KRA-approved device serial (NOT dynamic!)
     # Common sandbox test value (if pre-provisioned by KRA):
-    device_serial = "dvcv1130"  # REPLACE with your approved serial
     
-    response = etims.initialize({
+    response = etims.select_init_info({
         "tin": config.oscu["tin"],
         "bhfId": config.oscu["bhf_id"],
-        "dvcSrlNo": device_serial.strip(),
+        "dvcSrlNo": config.oscu["device_serial"],
     })
 
     # Extract cmcKey (sandbox returns at root level)
@@ -483,7 +482,7 @@ except ApiException as e:
 
 | Category | Purpose | Endpoints |
 |----------|---------|-----------|
-| **Initialization** | Device registration & cmcKey acquisition | `initialize` |
+| **Initialization** | Device registration & cmcKey acquisition | `select_init_info` |
 | **Data Management** | Retrieve standard codes & master data | `select_code_list`, `select_item_cls_list`, `select_bhf_list`, `select_taxpayer_info`, `select_customer_list`, `select_notice_list` |
 | **Branch Management** | Manage branch offices & users | `branch_insurance_info`, `branch_user_account`, `branch_send_customer_info` |
 | **Item Management** | Item master data | `save_item`, `item_info` |

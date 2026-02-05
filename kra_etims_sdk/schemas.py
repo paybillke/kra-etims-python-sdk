@@ -14,7 +14,7 @@ from pydantic import (
 # =========================================================
 
 TIN = Annotated[str, StringConstraints(min_length=1, max_length=20)]
-BHF = Annotated[str, StringConstraints(min_length=1, max_length=10)]
+BHF = Annotated[str, StringConstraints(min_length=1, max_length=20)]
 
 YN = Annotated[str, StringConstraints(pattern="^[YN]$")]
 

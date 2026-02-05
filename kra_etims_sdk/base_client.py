@@ -32,10 +32,11 @@ class BaseClient:
     def _request(self, method, endpoint, data):
         url = self.base_url() + endpoint
         headers = self._headers(endpoint)
+        print(url, headers, data)
         return requests.request(method, url, json=data, headers=headers, timeout=30)
 
     def _headers(self, endpoint):
-        if endpoint.endswith("/initialize"):
+        if endpoint.endswith("/selectInitOsdcInfo"):
             return {
                 "Authorization": f"Bearer {self.auth.token()}",
                 "Content-Type": "application/json",
