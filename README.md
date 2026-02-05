@@ -64,7 +64,7 @@ KRA's **Electronic Tax Invoice Management System (eTIMS)** uses **OSCU** (Online
 | **Device Registration** | Mandatory pre-registration | Not required |
 | **Authentication** | Bearer token | Basic auth only |
 | **Communication Key** | `cmcKey` required after init | Not applicable |
-| **API Base URL** | `sbx.kra.go.ke/etims-oscu/api/v1` | `etims-api-sbx.kra.go.ke` |
+| **API Base URL** | `etims-api.kra.go.ke/etims-api` | `etims-api.kra.go.ke/etims-api` |
 | **Header Requirements** | Strict 6-header compliance | Minimal headers |
 
 ### Receipt Types & Labels Matrix
@@ -168,7 +168,8 @@ flowchart TD
 Before integration, you **MUST** complete these prerequisites:
 
 ### 1. Device Registration (MANDATORY)
-- Register OSCU device via [eTIMS Taxpayer Sandbox Portal](https://sbx.kra.go.ke)
+- Register OSCU device via [eTIMS Taxpayer Production Portal](https://etims.kra.go.ke) 
+- Register OSCU device via [eTIMS Taxpayer Sandbox Portal](https://etims-sbx.kra.go.ke) 
 - Obtain **approved device serial number** (`dvcSrlNo`)
 - ⚠️ **Dynamic/unregistered device serials fail with `resultCd: 901`** ("It is not valid device")
 
@@ -178,7 +179,7 @@ Before integration, you **MUST** complete these prerequisites:
 response = etims.select_init_osdc_info({
     "tin": config.oscu["tin"],
     "bhfId": config.oscu["bhf_id"],
-    "dvcSrlNo": "dvcv1130",  # KRA-approved serial
+    "dvcSrlNo": config.oscu["device_serial"],  # KRA-approved serial
 })
 
 # 2. Extract cmcKey (sandbox returns at root level)
@@ -281,14 +282,14 @@ config = KraEtimsConfig(
     },
     
     api={
-        "sandbox": {"base_url": "https://sbx.kra.go.ke/etims-oscu/api/v1".strip()},
-        "production": {"base_url": "https://api.developer.go.ke/etims-oscu/api/v1".strip()}
+        "sandbox": {"base_url": "https://etims-api-sbx.kra.go.ke/etims-api".strip()},
+        "production": {"base_url": "https://etims-api.kra.go.ke/etims-api".strip()}
     },
     
     oscu={
         "tin": os.environ["KRA_TIN"],
-        "bhf_id": os.environ["KRA_BHF_ID"],
-        "cmc_key": "",  # Set AFTER initialization
+        "bhf_id": os.environ["KRA_BHF_ID"],        
+        "cmc_key": os.environ["CMC_KEY"] # Set AFTER initialization
     },
     
     endpoints={
@@ -332,7 +333,7 @@ config = KraEtimsConfig(
 ```
 
 > 💡 **Production URL Note**:  
-> Production base URL is `https://api.developer.go.ke/etims-oscu/api/v1` (NOT `kra.go.ke`)
+> Production base URL is `https://etims-api.kra.go.ke/etims-api` (NOT `https://etims-api-sbx.kra.go.ke/etims-api`)
 
 ---
 
@@ -696,7 +697,7 @@ KRA mandates successful completion of automated tests before verification:
 3. Deploy directly to production environment
 4. No SLA execution required
 
-> 💡 **Production URL**: `https://api.developer.go.ke/etims-oscu/api/v1`  
+> 💡 **Production URL**: `https://etims-api.kra.go.ke/etims-api`  
 > ⚠️ **Never use sandbox credentials in production** – KRA monitors environment separation strictly
 
 ---
