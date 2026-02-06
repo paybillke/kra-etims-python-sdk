@@ -1,47 +1,21 @@
+from typing import Dict, Any
 from pydantic import ValidationError
-from .schemas import *
+from .schemas import SCHEMAS
 from .exceptions import ValidationException
 
 
-SCHEMAS = {
-    # INIT
-    "initialization": Initialization,
-
-    # BASIC DATA
-    "codeList": CodeList,
-    "itemClsList": CodeList,
-    "bhfList": BhfList,
-    "noticeList": NoticeList,
-    "taxpayerInfo": TaxpayerInfo,
-    "customerList": CustomerList,
-
-    # PURCHASE
-    "purchaseTrns": PurchaseTrns,
-    "purchaseTransaction": PurchaseTransaction,
-
-    # SALES
-    "salesTrns": SalesTrns,
-    "selectSalesTrns": SelectSalesTrns,
-    "salesTransaction": SalesTransaction,
-
-    # STOCK
-    "moveList": MoveList,
-    "stockMaster": StockMaster,
-    "stockIO": StockIO,
-
-    # BRANCH
-    "branchInsurance": BranchInsurance,
-    "branchUserAccount": BranchUserAccount,
-    "customerInfo": CustomerInfo,
-}
-
-
 class Validator:
-    def validate(self, data: dict, schema: str) -> dict:
+    def validate(self, data: Dict[str, Any], schema: str) -> Dict[str, Any]:
         if schema not in SCHEMAS:
             raise ValueError(f"Validation schema '{schema}' not defined")
 
         try:
-            return SCHEMAS[schema](**data).dict()
+            validated = SCHEMAS[schema](**data)
+            return validated.model_dump(mode='json')  # Converts Decimals to floats
         except ValidationError as e:
-            raise ValidationException("Validation failed", e.errors())
+            # Convert Pydantic errors to field:message dict like PHP
+            messages = {}
+            for error in e.errors():
+                field = ".".join(str(loc) for loc in error["loc"])
+                messages[field] = error["msg"]
+            raise ValidationException("Validation failed", messages)

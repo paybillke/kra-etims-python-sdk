@@ -16,7 +16,7 @@
 ![Postman Compliant](https://img.shields.io/badge/Postman-Compliant-FF6C37?logo=postman)
 ![Pytest Tested](https://img.shields.io/badge/Tests-Pytest-3776AB?logo=pytest)
 
-A production-ready **Python SDK** for integrating with the Kenya Revenue Authority (KRA) **eTIMS OSCU** (Online Sales Control Unit) API. Built to match the official Postman collection specifications with strict header compliance, token management, and comprehensive Pydantic validation.
+A production-ready **Python SDK** for integrating with the Kenya Revenue Authority (KRA) **eTIMS OSCU** (Online Sales Control Unit) API. Built to match the official Postman collection specifications with strict header compliance, token management, and comprehensive payload validation.
 
 > ⚠️ **Critical Note**: This SDK implements the **new OSCU specification** (KRA-hosted), *not* the VSCU eTIMS API. OSCU requires device registration, headers, and `cmcKey` lifecycle management.
 
@@ -55,17 +55,6 @@ KRA's **Electronic Tax Invoice Management System (eTIMS)** uses **OSCU** (Online
 - Pre-registered device serial numbers (`dvcSrlNo`)
 - Communication key (`cmcKey`) lifecycle management
 - Strict payload schema compliance per KRA specifications
-
-### OSCU vs VSCU eTIMS
-
-| Feature | OSCU (This SDK) | VSCU eTIMS |
-|---------|-----------------|--------------|
-| **Hosting** | KRA-hosted (cloud) | Self-hosted (on-premise) |
-| **Device Registration** | Mandatory pre-registration | Not required |
-| **Authentication** | Bearer token | Basic auth only |
-| **Communication Key** | `cmcKey` required after init | Not applicable |
-| **API Base URL** | `etims-api.kra.go.ke/etims-api` | `etims-api.kra.go.ke/etims-api` |
-| **Header Requirements** | Strict 6-header compliance | Minimal headers |
 
 ### Receipt Types & Labels Matrix
 
@@ -177,23 +166,22 @@ Before integration, you **MUST** complete these prerequisites:
 ```python
 # 1. Initialize FIRST (returns cmcKey)
 response = etims.select_init_osdc_info({
-    "tin": config.oscu["tin"],
-    "bhfId": config.oscu["bhf_id"],
-    "dvcSrlNo": config.oscu["device_serial"],  # KRA-approved serial
+    "tin": config["oscu"]["tin"],
+    "bhfId": config["oscu"]["bhf_id"],
+    "dvcSrlNo": config["oscu"]["device_serial"],  # KRA-approved serial
 })
 
-# 2. Extract cmcKey (sandbox returns at root level)
-cmc_key = response.get("cmcKey") or response.get("data", {}).get("cmcKey")
+# 2. Extract cmcKey
+cmc_key = response.get("cmcKey")
 
 # 3. Update config IMMEDIATELY
-config.oscu["cmc_key"] = cmc_key
+config["oscu"]["cmc_key"] = cmc_key
 
 # 4. Recreate client with updated config (critical!)
 etims = EtimsClient(config, auth)
-
-# 5. ALL subsequent requests require cmcKey in headers
-etims.select_code_list(...)
 ```
+
+> 🔔 Note: `cmcKey` is only required for certain write operations (branch/user/insurance), not all endpoints.
 
 ### 3. Invoice Numbering Rules
 - **MUST be sequential integers** (1, 2, 3...) – **NOT strings** (`INV001`)
@@ -246,94 +234,52 @@ etims.select_code_list(...)
 
 ```bash
 pip install kra-etims-sdk
-# OR with dev dependencies
-pip install "kra-etims-sdk[dev]"
 ```
 
 ### Requirements
 - Python 3.9+
 - `requests` (≥2.31)
 - `pydantic` (≥2.0)
-- `typing-extensions` (for Python <3.10)
+
+> 💡 The SDK uses plain dictionaries for configuration — no custom config class required.
 
 ---
 
 ## Configuration
 
-```python
-from kra_etims_sdk import KraEtimsConfig
-import os
+Define your config as a **plain Python dictionary**:
 
-config = KraEtimsConfig(
-    env="sandbox",  # "sandbox" | "production"
-    cache_file="./.kra_token.json",
-    
-    auth={
-        "sandbox": {
-            "token_url": "https://sbx.kra.go.ke/v1/token/generate".strip(),
-            "consumer_key": os.environ["KRA_CONSUMER_KEY"],
-            "consumer_secret": os.environ["KRA_CONSUMER_SECRET"],
-        },
-        "production": {
-            "token_url": "https://kra.go.ke/v1/token/generate".strip(),
-            "consumer_key": os.environ["KRA_PROD_CONSUMER_KEY"],
-            "consumer_secret": os.environ["KRA_PROD_CONSUMER_SECRET"],
+```python
+import os
+import tempfile
+
+config = {
+    'env': 'sbx',  # 'sbx' = sandbox, 'prod' = production
+    'cache_file': os.path.join(tempfile.gettempdir(), 'kra_etims_token.json'),
+    'auth': {
+        'sbx': {
+            'token_url': 'https://sbx.kra.go.ke/v1/token/generate',
+            'consumer_key': os.getenv('KRA_CONSUMER_KEY'),
+            'consumer_secret': os.getenv('KRA_CONSUMER_SECRET'),
         }
     },
-    
-    api={
-        "sandbox": {"base_url": "https://etims-api-sbx.kra.go.ke/etims-api".strip()},
-        "production": {"base_url": "https://etims-api.kra.go.ke/etims-api".strip()}
+    'api': {
+        'sbx': {'base_url': 'https://etims-api-sbx.kra.go.ke/etims-api'}
     },
-    
-    oscu={
-        "tin": os.environ["KRA_TIN"],
-        "bhf_id": os.environ["KRA_BHF_ID"],        
-        "cmc_key": os.environ["CMC_KEY"] # Set AFTER initialization
-    },
-    
-    endpoints={
-        # INITIALIZATION (ONLY endpoint without tin/bhfId/cmcKey headers)
-        "selectInitOsdcInfo": "/selectInitOsdcInfo",
-        
-        # DATA MANAGEMENT
-        "selectCodeList": "/selectCodeList",
-        "selectItemClsList": "/selectItemClass",
-        "selectBhfList": "/branchList",
-        "selectTaxpayerInfo": "/selectTaxpayerInfo",
-        "selectCustomerList": "/selectCustomerList",
-        "selectNoticeList": "/selectNoticeList",
-        
-        # BRANCH MANAGEMENT
-        "branchInsuranceInfo": "/branchInsuranceInfo",
-        "branchUserAccount": "/branchUserAccount",
-        "branchSendCustomerInfo": "/branchSendCustomerInfo",
-        
-        # ITEM MANAGEMENT
-        "saveItem": "/saveItem",
-        "itemInfo": "/itemInfo",
-        
-        # PURCHASE MANAGEMENT
-        "selectPurchaseTrns": "/getPurchaseTransactionInfo",
-        "sendPurchaseTransactionInfo": "/sendPurchaseTransactionInfo",
-        
-        # SALES MANAGEMENT
-        "sendSalesTransaction": "/sendSalesTransaction",
-        "selectSalesTrns": "/selectSalesTransactions",
-        "selectInvoiceDetail": "/selectInvoiceDetail",
-        
-        # STOCK MANAGEMENT (NESTED PATHS - CRITICAL)
-        "insertStockIO": "/insert/stockIO",    # ← slash in path
-        "saveStockMaster": "/save/stockMaster",  # ← slash in path
-        "selectMoveList": "/selectStockMoveLists",
-    },
-    
-    http={"timeout": 30}
-)
+    'http': {'timeout': 30},
+    'oscu': {
+        'tin': os.getenv('KRA_TIN'),
+        'bhf_id': os.getenv('KRA_BHF_ID') or '01',
+        'device_serial': os.getenv('DEVICE_SERIAL'),
+        'cmc_key': '',  # populated after initialization
+    }
+}
 ```
 
-> 💡 **Production URL Note**:  
-> Production base URL is `https://etims-api.kra.go.ke/etims-api` (NOT `https://etims-api-sbx.kra.go.ke/etims-api`)
+> ✅ **Required environment variables**:  
+> `KRA_CONSUMER_KEY`, `KRA_CONSUMER_SECRET`, `KRA_TIN`, `DEVICE_SERIAL`  
+>  
+> ⚠️ **Never include trailing spaces in URLs** — they cause silent connection failures.
 
 ---
 
@@ -341,164 +287,109 @@ config = KraEtimsConfig(
 
 ### Step 1: Initialize SDK
 ```python
-from kra_etims_sdk import AuthClient, EtimsClient
-from kra_etims_sdk.exceptions import ApiException, ValidationException
+from kra_etims_sdk.auth import AuthClient
+from kra_etims_sdk.client import EtimsClient
 
 auth = AuthClient(config)
 etims = EtimsClient(config, auth)
 ```
 
-### Step 2: Authenticate (Get Access Token)
+### Step 2: Authenticate
 ```python
 try:
-    # Force fresh token (optional - cache used by default)
-    token = auth.token(force_refresh=True)
-    print(f"✅ Token acquired: {token[:20]}...")
-except AuthenticationException as e:
+    auth.forget_token()  # Clear cached token
+    token = auth.token(force=True)
+    print(f"✅ Token OK: {token[:25]}...")
+except Exception as e:
     print(f"❌ Authentication failed: {e}")
     exit(1)
 ```
 
-### Step 3: OSCU Initialization (Critical Step)
+### Step 3: OSCU Initialization (If Needed)
+> Only required for `cmcKey`-dependent operations (e.g., saving branch users or insurance).
+
 ```python
 try:
-    # ⚠️ MUST use KRA-approved device serial (NOT dynamic!)
-    # Common sandbox test value (if pre-provisioned by KRA):
-    
-    response = etims.select_init_info({
-        "tin": config.oscu["tin"],
-        "bhfId": config.oscu["bhf_id"],
-        "dvcSrlNo": config.oscu["device_serial"],
+    init_resp = etims.select_init_osdc_info({
+        'tin': config['oscu']['tin'],
+        'bhfId': config['oscu']['bhf_id'],
+        'dvcSrlNo': config['oscu']['device_serial'],
     })
-
-    # Extract cmcKey (sandbox returns at root level)
-    cmc_key = response.get("cmcKey") or response.get("data", {}).get("cmcKey")
+    
+    cmc_key = init_resp.get('cmcKey')
     if not cmc_key:
         raise RuntimeError("cmcKey not found in response")
 
-    # Update config IMMEDIATELY
-    config.oscu["cmc_key"] = cmc_key
-    
-    # Recreate client with updated config (critical!)
-    etims = EtimsClient(config, auth)
-    
+    config['oscu']['cmc_key'] = cmc_key
+    etims = EtimsClient(config, auth)  # Reinitialize to inject cmcKey
     print(f"✅ OSCU initialized. cmcKey: {cmc_key[:15]}...")
 
-except ApiException as e:
-    if e.error_code == "901":
-        print("❌ DEVICE NOT VALID (resultCd 901)")
-        print("   → Device serial not registered with KRA")
-        print("   → Contact timsupport@kra.go.ke for approved serial")
-        print("   → Common sandbox test value: 'dvcv1130' (may work if pre-provisioned)")
-        exit(1)
-    raise
-```
-
-### Step 4: Business Operations (Postman-Compliant Payload)
-```python
-from datetime import datetime, timedelta
-
-def kra_date(days_offset=0):
-    """Generate KRA-compliant date strings"""
-    d = datetime.now() + timedelta(days=days_offset)
-    return d.strftime("%Y%m%d%H%M%S")  # YYYYMMDDHHmmss
-
-# Fetch code list (demonstrates header injection)
-try:
-    codes = etims.select_code_list({
-        "tin": config.oscu["tin"],
-        "bhfId": config.oscu["bhf_id"],
-        "lastReqDt": kra_date(-7),  # NOT future date
-    })
-    print(f"✅ Retrieved {len(codes.get('itemList', []))} codes")
 except Exception as e:
-    print(f"❌ Code list fetch failed: {e}")
-
-# Send sales transaction (FULL Postman payload structure)
-try:
-    response = etims.send_sales_transaction({
-        "invcNo": 1,  # INTEGER (sequential) - NOT string!
-        "custTin": "A123456789Z",
-        "custNm": "Test Customer",
-        "salesTyCd": "N",  # N=Normal, R=Return
-        "rcptTyCd": "R",   # R=Receipt
-        "pmtTyCd": "01",   # 01=Cash
-        "salesSttsCd": "01",  # 01=Completed
-        "cfmDt": kra_date(),     # YYYYMMDDHHmmss
-        "salesDt": kra_date()[:8],  # YYYYMMDD (NO time)
-        "totItemCnt": 1,
-        # TAX BREAKDOWN (ALL 15 FIELDS REQUIRED)
-        "taxblAmtA": 0.00, "taxblAmtB": 0.00, "taxblAmtC": 81000.00,
-        "taxblAmtD": 0.00, "taxblAmtE": 0.00,
-        "taxRtA": 0.00, "taxRtB": 0.00, "taxRtC": 0.00,
-        "taxRtD": 0.00, "taxRtE": 0.00,
-        "taxAmtA": 0.00, "taxAmtB": 0.00, "taxAmtC": 0.00,
-        "taxAmtD": 0.00, "taxAmtE": 0.00,
-        "totTaxblAmt": 81000.00,
-        "totTaxAmt": 0.00,
-        "totAmt": 81000.00,
-        "regrId": "Admin", "regrNm": "Admin",
-        "modrId": "Admin", "modrNm": "Admin",
-        "itemList": [{
-            "itemSeq": 1,
-            "itemCd": "KE2NTBA00000001",  # Must exist in KRA system
-            "itemClsCd": "1000000000",
-            "itemNm": "Brand A",
-            "barCd": "",  # Nullable but REQUIRED field
-            "pkgUnitCd": "NT",
-            "pkg": 1,     # Package quantity
-            "qtyUnitCd": "BA",
-            "qty": 90.0,
-            "prc": 1000.00,
-            "splyAmt": 81000.00,
-            "dcRt": 10.0,   # Discount rate %
-            "dcAmt": 9000.00,  # Discount amount
-            "taxTyCd": "C",    # C = Zero-rated/Exempt
-            "taxblAmt": 81000.00,
-            "taxAmt": 0.00,
-            "totAmt": 81000.00,  # splyAmt - dcAmt + taxAmt
-        }],
-    })
-    
-    print(f"✅ Sales transaction sent (resultCd: {response['resultCd']})")
-    print(f"Receipt Signature: {response['data']['rcptSign']}")
-
-except ValidationException as e:
-    print("❌ Validation failed:")
-    for err in e.errors:
-        field = err.get('loc', [])[0] if err.get('loc') else 'unknown'
-        print(f"  • {field}: {err.get('msg', 'validation error')}")
-
-except ApiException as e:
-    print(f"❌ KRA API Error ({e.error_code}): {e}")
-    if e.details and 'resultMsg' in e.details:
-        print(f"KRA Message: {e.details['resultMsg']}")
+    print(f"❌ OSCU Init failed: {e}")
+    exit(1)
 ```
+
+### Step 4: Business Operations
+```python
+# Fetch code list
+codes = etims.select_code_list({'lastReqDt': '20260101000000'})
+
+# Save an item
+item_resp = etims.save_item({
+    'itemCd': 'KE1NTXU0000006',
+    'itemClsCd': '5059690800',
+    'itemNm': 'Test Material',
+    'pkgUnitCd': 'NT',
+    'qtyUnitCd': 'U',
+    'taxTyCd': 'B',
+    'dftPrc': 3500,
+    'useYn': 'Y',
+    'regrId': 'Test', 'regrNm': 'Test',
+    'modrId': 'Test', 'modrNm': 'Test',
+})
+
+# Save purchase transaction (full tax breakdown required)
+purchase_resp = etims.save_purchase({
+    'invcNo': 1,
+    'spplrTin': 'A123456789Z',
+    'pchsTyCd': 'N',
+    'rcptTyCd': 'P',
+    'pmtTyCd': '01',
+    'pchsSttsCd': '02',
+    'cfmDt': '20260206120000',
+    'pchsDt': '20260206',
+    'totItemCnt': 1,
+    'taxblAmtA': 0, 'taxblAmtB': 10500, 'taxblAmtC': 0, 'taxblAmtD': 0, 'taxblAmtE': 0,
+    'taxRtA': 0, 'taxRtB': 18, 'taxRtC': 0, 'taxRtD': 0, 'taxRtE': 0,
+    'taxAmtA': 0, 'taxAmtB': 1890, 'taxAmtC': 0, 'taxAmtD': 0, 'taxAmtE': 0,
+    'totTaxblAmt': 10500,
+    'totTaxAmt': 1890,
+    'totAmt': 10500,
+    'regrId': 'Test', 'regrNm': 'Test',
+    'modrId': 'Test', 'modrNm': 'Test',
+    'itemList': [/* ... */],
+})
+```
+
+> ✅ All payloads are validated using internal Pydantic schemas before sending.
 
 ---
 
 ## API Reference
 
-### Functional Categories (8 Total)
+### Functional Categories & Methods
 
-| Category | Purpose | Endpoints |
-|----------|---------|-----------|
-| **Initialization** | Device registration & cmcKey acquisition | `select_init_info` |
-| **Data Management** | Retrieve standard codes & master data | `select_code_list`, `select_item_cls_list`, `select_bhf_list`, `select_taxpayer_info`, `select_customer_list`, `select_notice_list` |
-| **Branch Management** | Manage branch offices & users | `branch_insurance_info`, `branch_user_account`, `branch_send_customer_info` |
-| **Item Management** | Item master data | `save_item`, `item_info` |
-| **Purchase Management** | Purchase transactions | `select_purchase_trns`, `send_purchase_transaction_info` |
-| **Sales Management** | Sales transactions & invoices | `send_sales_transaction`, `select_sales_trns`, `select_invoice_detail` |
-| **Stock Management** | Inventory movements & stock levels | `insert_stock_io`, `save_stock_master`, `select_move_list` |
+| Category | Methods |
+|--------|--------|
+| **Initialization** | `select_init_osdc_info()` |
+| **Data Management** | `select_code_list()`, `select_customer()`, `select_notice_list()`, `select_branches()`, `select_item_classes()`, `select_items()` |
+| **Branch Management** | `save_branch_customer()`, `save_branch_user()`, `save_branch_insurance()` |
+| **Item Management** | `save_item()`, `save_item_composition()` |
+| **Purchase Management** | `save_purchase()`, `select_purchases()` |
+| **Sales Management** | `save_sales_transaction()` |
+| **Stock Management** | `save_stock_io()`, `save_stock_master()`, `select_stock_movement()` |
 
-### Core Classes
-
-| Class | Purpose |
-|-------|---------|
-| `AuthClient` | Token generation, caching (60s buffer), and refresh management |
-| `BaseClient` | HTTP request handling, header management, error unwrapping |
-| `EtimsClient` | Business endpoint methods (all 8 functional categories) |
-| `Validator` | Payload validation against KRA schemas (Pydantic v2) |
+> 🔍 Each method maps to a KRA endpoint alias defined internally (e.g., `save_purchase` → `insertTrnsPurchase`).
 
 ---
 
@@ -532,38 +423,20 @@ except ApiException as e:
 ### Handling Pattern
 ```python
 try:
-    response = etims.send_sales_transaction(payload)
+    response = etims.save_purchase(payload)
     
 except ValidationException as e:
     print("❌ Validation failed:")
-    for error in e.errors:
-        field = error.get('loc', [])[0] if error.get('loc') else 'unknown'
-        print(f"  • {field}: {error.get('msg', 'validation error')}")
+    for field, msg in e.details.items():
+        print(f"  • {field}: {msg}")
 
 except ApiException as e:
     print(f"❌ KRA API Error ({e.error_code}): {e}")
-    
-    # Get full KRA response for debugging
     if e.details and 'resultMsg' in e.details:
         print(f"KRA Message: {e.details['resultMsg']}")
-    
-    # Handle specific error codes
-    if e.error_code == "901":
-        print("→ Device serial not registered with KRA")
-    elif e.error_code == "902":
-        print("→ cmcKey expired - reinitialize OSCU")
-    elif e.error_code == "500":
-        print("→ Invalid payload - check date formats/tax fields")
 
 except AuthenticationException as e:
     print(f"❌ Authentication failed: {e}")
-    
-    # Attempt token refresh
-    try:
-        auth.token(force_refresh=True)
-        # Retry operation...
-    except Exception as ex:
-        print(f"Token refresh failed: {ex}")
 ```
 
 ### Comprehensive KRA Error Codes
@@ -600,18 +473,14 @@ except AuthenticationException as e:
 **Cause**: cmcKey expired or not set in config  
 **Solution**:
 ```python
-# After initialization:
-config.oscu["cmc_key"] = extracted_cmc_key
+config['oscu']['cmc_key'] = extracted_cmc_key
 etims = EtimsClient(config, auth)  # MUST recreate client
 ```
 
 ### ❌ Trailing spaces in URLs
 
 **Cause**: Copy-paste errors from documentation  
-**Solution**: Always use `.strip()` on URLs:
-```python
-"token_url": "https://sbx.kra.go.ke/v1/token/generate  ".strip(),
-```
+**Solution**: Always verify URLs have no trailing whitespace.
 
 ### ❌ Invoice number rejected
 
@@ -619,7 +488,6 @@ etims = EtimsClient(config, auth)  # MUST recreate client
 **Solution**: Use sequential integers starting from 1:
 ```python
 "invcNo": 1,  # ✅ Correct
-# NOT "INV001" ❌
 ```
 
 ---
@@ -718,7 +586,7 @@ KRA mandates successful completion of automated tests before verification:
 - **Email**: ebartile@gmail.com (for integration guidance)
 - **Emergency Hotline**: +254757807150 (business hours only)
 
-> ℹ️ **Disclaimer**: This SDK is not officially endorsed by Kenya Revenue Authority. Always verify integration requirements with KRA before production deployment. KRA may update API specifications without notice – monitor [GavaConnect Portal](https://developer.go.ke) for updates.
+> ℹ️ **Disclaimer**: This SDK is independently developed by Paybill Kenya and is **not affiliated with or endorsed by the Kenya Revenue Authority (KRA)**. Always verify integration requirements with KRA before production deployment. KRA may update API specifications without notice – monitor [GavaConnect Portal](https://developer.go.ke) for updates.
 
 ---
 
@@ -726,7 +594,7 @@ KRA mandates successful completion of automated tests before verification:
 
 MIT License
 
-Copyright © 2024-2026 Bartile Emmanuel / Paybill Kenya
+Copyright © 2024–2026 Bartile Emmanuel / Paybill Kenya
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -753,4 +621,3 @@ SOFTWARE.
 This SDK was developed by **Bartile Emmanuel** for Paybill Kenya to simplify KRA eTIMS OSCU integration for Kenyan businesses. Special thanks to KRA for providing comprehensive API documentation and Postman collections.
 
 > 🇰🇪 **Proudly Made in Kenya** – Supporting digital tax compliance for East Africa's largest economy.  
-> *Tested on KRA Sandbox • Built with Python • Pydantic v2 Validation • Production Ready*

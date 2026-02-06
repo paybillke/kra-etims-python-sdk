@@ -3,7 +3,6 @@ from .validator import Validator
 
 
 class EtimsClient(BaseClient):
-
     def __init__(self, config: dict, auth):
         super().__init__(config, auth)
         self.validator = Validator()
@@ -11,96 +10,86 @@ class EtimsClient(BaseClient):
     def _validate(self, data: dict, schema: str) -> dict:
         return self.validator.validate(data, schema)
 
+    # -----------------------------
+    # INITIALIZATION
+    # -----------------------------
     def select_init_osdc_info(self, data: dict) -> dict:
-        """
-        Initialize the OSCU device with KRA.
-        Returns cmcKey and device information.
-        """
         return self.post("selectInitOsdcInfo", self._validate(data, "initialization"))
 
     # -----------------------------
-    # BASIC DATA ENDPOINTS
+    # CODE LISTS
     # -----------------------------
     def select_code_list(self, data: dict) -> dict:
-        return self.post("selectCodeList", self._validate(data, "codeList"))
-
-    def select_item_cls_list(self, data: dict) -> dict:
-        return self.post("selectItemClsList", self._validate(data, "itemClsList"))
-
-    def select_bhf_list(self, data: dict) -> dict:
-        return self.post("selectBhfList", self._validate(data, "bhfList"))
-
-    def select_notice_list(self, data: dict) -> dict:
-        return self.post("selectNoticeList", self._validate(data, "noticeList"))
-
-    def select_taxpayer_info(self, data: dict) -> dict:
-        return self.post("selectTaxpayerInfo", self._validate(data, "taxpayerInfo"))
-
-    def select_customer_list(self, data: dict) -> dict:
-        return self.post("selectCustomerList", self._validate(data, "customerList"))
+        return self.post("selectCodeList", self._validate(data, "lastReqOnly"))
 
     # -----------------------------
-    # PURCHASE ENDPOINTS
+    # CUSTOMER / BRANCH
     # -----------------------------
-    def select_purchase_trns(self, data: dict) -> dict:
-        return self.post("selectPurchaseTrns", self._validate(data, "purchaseTrns"))
+    def select_customer(self, data: dict) -> dict:
+        return self.post("selectCustomer", self._validate(data, "custSearchReq"))
 
-    def send_purchase_transaction_info(self, data: dict) -> dict:
-        return self.post(
-            "sendPurchaseTransactionInfo",
-            self._validate(data, "purchaseTransaction"),
-        )
+    def select_branches(self, data: dict) -> dict:
+        return self.post("selectBhfList", self._validate(data, "lastReqOnly"))
 
-    # -----------------------------
-    # SALES ENDPOINTS
-    # -----------------------------
-    def send_sales_trns(self, data: dict) -> dict:
-        return self.post("sendSalesTrns", self._validate(data, "salesTrns"))
+    def save_branch_customer(self, data: dict) -> dict:
+        return self.post("saveBhfCustomer", self._validate(data, "branchCustomer"))
 
-    def send_sales_transaction(self, data: dict) -> dict:
-        return self.post(
-            "sendSalesTransaction",
-            self._validate(data, "salesTransaction"),
-        )
+    def save_branch_user(self, data: dict) -> dict:
+        return self.post("saveBhfUser", self._validate(data, "branchUser"))
 
-    def select_sales_trns(self, data: dict) -> dict:
-        return self.post("selectSalesTrns", self._validate(data, "selectSalesTrns"))
+    def save_branch_insurance(self, data: dict) -> dict:
+        return self.post("saveBhfInsurance", self._validate(data, "branchInsurance"))
 
     # -----------------------------
-    # STOCK ENDPOINTS
+    # ITEM
     # -----------------------------
-    def select_move_list(self, data: dict) -> dict:
-        return self.post("selectMoveList", self._validate(data, "moveList"))
+    def select_item_classes(self, data: dict) -> dict:
+        return self.post("selectItemClsList", self._validate(data, "lastReqOnly"))
+
+    def select_items(self, data: dict) -> dict:
+        return self.post("selectItemList", self._validate(data, "lastReqOnly"))
+
+    def save_item(self, data: dict) -> dict:
+        return self.post("saveItem", self._validate(data, "saveItem"))
+
+    def save_item_composition(self, data: dict) -> dict:
+        return self.post("SaveItemComposition", self._validate(data, "itemComposition"))
+
+    # -----------------------------
+    # IMPORTED ITEMS
+    # -----------------------------
+    def select_imported_items(self, data: dict) -> dict:
+        return self.post("selectImportItemList", self._validate(data, "lastReqOnly"))
+
+    def update_imported_item(self, data: dict) -> dict:
+        return self.post("updateImportItem", self._validate(data, "importItemUpdate"))
+
+    # -----------------------------
+    # PURCHASES
+    # -----------------------------
+    def select_purchases(self, data: dict) -> dict:
+        return self.post("selectTrnsPurchaseSalesList", self._validate(data, "lastReqOnly"))
+
+    def save_purchase(self, data: dict) -> dict:
+        return self.post("insertTrnsPurchase", self._validate(data, "insertTrnsPurchase"))
+
+    def save_sales_transaction(self, data: dict) -> dict:
+        return self.post("TrnsSalesSaveWrReq", self._validate(data, "lastReqOnly"))
+
+    # -----------------------------
+    # STOCK
+    # -----------------------------
+    def select_stock_movement(self, data: dict) -> dict:
+        return self.post("selectStockMoveList", self._validate(data, "lastReqOnly"))
+
+    def save_stock_io(self, data: dict) -> dict:
+        return self.post("insertStockIO", self._validate(data, "saveStockIO"))
 
     def save_stock_master(self, data: dict) -> dict:
         return self.post("saveStockMaster", self._validate(data, "stockMaster"))
 
-    def insert_stock_io(self, data: dict) -> dict:
-        return self.post("insertStockIO", self._validate(data, "stockIO"))
-
     # -----------------------------
-    # BRANCH / MANAGEMENT ENDPOINTS
+    # NOTICES
     # -----------------------------
-    def branch_insurance_info(self, data: dict) -> dict:
-        return self.post(
-            "branchInsuranceInfo",
-            self._validate(data, "branchInsurance"),
-        )
-
-    def branch_user_account(self, data: dict) -> dict:
-        return self.post(
-            "branchUserAccount",
-            self._validate(data, "branchUserAccount"),
-        )
-
-    def branch_send_customer_info(self, data: dict) -> dict:
-        return self.post(
-            "branchSendCustomerInfo",
-            self._validate(data, "customerInfo"),
-        )
-
-    # -----------------------------
-    # ITEM / MASTER DATA
-    # -----------------------------
-    def save_item(self, data: dict) -> dict:
-        return self.post("saveItem", self._validate(data, "item"))
+    def select_notice_list(self, data: dict) -> dict:
+        return self.post("selectNoticeList", self._validate(data, "lastReqOnly"))
