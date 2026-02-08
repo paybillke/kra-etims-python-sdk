@@ -129,15 +129,6 @@ class BaseClient:
         except Exception:
             raise ApiException(response.text, response.status_code)
 
-        # KRA business error
-        if json_data.get("resultCd") and json_data["resultCd"] != "000":
-            raise ApiException(
-                json_data.get("resultMsg", "KRA business error"),
-                400,
-                json_data.get("resultCd"),
-                json_data
-            )
-
         # HTTP errors
         if 200 <= response.status_code < 300:
             return json_data
