@@ -145,5 +145,4 @@ class BaseClient:
         if response.status_code == 401:
             raise AuthenticationException("Unauthorized: Invalid or expired token")
 
-        message = json_data.get("fault", {}).get("faultstring", response.text)
-        raise ApiException(message, response.status_code)
+        return json_data
