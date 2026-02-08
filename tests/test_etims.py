@@ -1,3 +1,4 @@
+import random
 import os
 import sys
 import json
@@ -99,16 +100,19 @@ except ApiException as e:
 header_line('STEP 4: CUSTOMER SEARCH')
 try:
     customers = etims.select_customer({'custmTin': 'A123456789Z'})
-    cust_list = customers.get('data', {}).get('custList', [])
-    print(f"Customers found: {len(cust_list)}")
-    for cust in cust_list:
-        print(f"- TIN: {cust['tin']}")
-        print(f"  Name: {cust['taxprNm']}")
-        print(f"  Status: {cust['taxprSttsCd']}")
-        print(f"  County: {cust['prvncNm']}")
-        print(f"  Sub-County: {cust['dstrtNm']}")
-        print(f"  Tax Locality: {cust['sctrNm']}")
-        print(f"  Location Desc: {cust['locDesc']}\n")
+    if customers.get('resultCd') == '000':
+        cust_list = customers.get('data', {}).get('custList', [])
+        print(f"Customers found: {len(cust_list)}")
+        for cust in cust_list:
+            print(f"- TIN: {cust['tin']}")
+            print(f"  Name: {cust['taxprNm']}")
+            print(f"  Status: {cust['taxprSttsCd']}")
+            print(f"  County: {cust['prvncNm']}")
+            print(f"  Sub-County: {cust['dstrtNm']}")
+            print(f"  Tax Locality: {cust['sctrNm']}")
+            print(f"  Location Desc: {cust['locDesc']}\n")
+    else:
+        print(f"Result Message: {customers.get('resultMsg')}")
 except ApiException as e:
     print(f"Customer search failed: {e}")
 
@@ -116,15 +120,18 @@ except ApiException as e:
 header_line('STEP 5: NOTICE SEARCH')
 try:
     notices = etims.select_notice_list({'lastReqDt': last_req_dt(-30)})
-    notice_list = notices.get('data', {}).get('noticeList', [])
-    print(f"Notices found: {len(notice_list)}")
-    for notice in notice_list:
-        print(f"- Notice No: {notice['noticeNo']}")
-        print(f"  Title: {notice['title']}")
-        print(f"  Contents: {notice['cont']}")
-        print(f"  Detail URL: {notice['dtlUrl']}")
-        print(f"  Registered by: {notice['regrNm']}")
-        print(f"  Registration Date: {notice['regDt']}\n")
+    if notices.get('resultCd') == '000':
+        notice_list = notices.get('data', {}).get('noticeList', [])
+        print(f"Notices found: {len(notice_list)}")
+        for notice in notice_list:
+            print(f"- Notice No: {notice['noticeNo']}")
+            print(f"  Title: {notice['title']}")
+            print(f"  Contents: {notice['cont']}")
+            print(f"  Detail URL: {notice['dtlUrl']}")
+            print(f"  Registered by: {notice['regrNm']}")
+            print(f"  Registration Date: {notice['regDt']}\n")
+    else:
+        print(f"Result Message: {notices.get('resultMsg')}")
 except ApiException as e:
     print(f"Notice search failed: {e}")
 
@@ -132,15 +139,18 @@ except ApiException as e:
 header_line('STEP 6: ITEM CLASS SEARCH')
 try:
     item_classes = etims.select_item_classes({'lastReqDt': last_req_dt(-30)})
-    item_cls_list = item_classes.get('data', {}).get('itemClsList', [])
-    print(f"Item Classes found: {len(item_cls_list)}")
-    for item in item_cls_list:
-        print(f"- Item Class Code: {item['itemClsCd']}")
-        print(f"  Name: {item['itemClsNm']}")
-        print(f"  Level: {item['itemClsLvl']}")
-        print(f"  Tax Type Code: {item['taxTyCd']}")
-        print(f"  Major Target: {item['mjrTgYn']}")
-        print(f"  Use Status: {item['useYn']}\n")
+    if item_classes.get('resultCd') == '000':
+        item_cls_list = item_classes.get('data', {}).get('itemClsList', [])
+        print(f"Item Classes found: {len(item_cls_list)}")
+        for item in item_cls_list:
+            print(f"- Item Class Code: {item['itemClsCd']}")
+            print(f"  Name: {item['itemClsNm']}")
+            print(f"  Level: {item['itemClsLvl']}")
+            print(f"  Tax Type Code: {item['taxTyCd']}")
+            print(f"  Major Target: {item['mjrTgYn']}")
+            print(f"  Use Status: {item['useYn']}\n")
+    else:
+        print(f"Result Message: {item_classes.get('resultMsg')}")
 except ApiException as e:
     print(f"Item Class search failed: {e}")
 
@@ -541,3 +551,137 @@ except ValidationException as e:
         print(f"- Field '{field}': {msg}")
 
 print("\n🎉 All steps completed successfully!")
+
+# ---------------------------- STEP 20: SAVE SALES TRANSACTION ----------------------------
+header_line('STEP 20: SAVE SALES TRANSACTION')
+try:
+    # Prepare sales transaction data matching specification
+    sales_data = {
+        "tin": "A123456789Z",
+        "bhfId": "00",
+        "cmcKey": "COMM_KEY_20260208123456",
+        "trdInvcNo": "TRD_INV_20260208_001",
+        "invcNo": str(random.randint(1, 1000)),
+        "orgInvcNo": "0",
+        "custTin": "A123456789Z",
+        "custNm": "Test Customer",
+        "rcptTyCd": "S",  # Sale receipt type
+        "pmtTyCd": "01",  # Cash payment
+        "salesSttsCd": "02",  # Completed
+        "cfmDt": "20260208143000",  # yyyyMMddHHmmss
+        "salesDt": "20260208",  # yyyyMMdd
+        "stockRlsDt": "20260208143000",
+        "cnclReqDt": None,
+        "cnclDt": None,
+        "rfdDt": None,
+        "rfdRsnCd": None,
+        "totItemCnt": 2,
+        "taxblAmtA": 0.00,
+        "taxblAmtB": 10500.00,
+        "taxblAmtC": 0.00,
+        "taxblAmtD": 0.00,
+        "taxblAmtE": 0.00,
+        "taxRtA": 0.00,
+        "taxRtB": 18.00,
+        "taxRtC": 0.00,
+        "taxRtD": 0.00,
+        "taxRtE": 0.00,
+        "taxAmtA": 0.00,
+        "taxAmtB": 1602.00,
+        "taxAmtC": 0.00,
+        "taxAmtD": 0.00,
+        "taxAmtE": 0.00,
+        "totTaxblAmt": 10500.00,
+        "totTaxAmt": 1602.00,
+        "totAmt": 12102.00,
+        "prchrAcptcYn": "N",
+        "remark": "Test sale transaction",
+        "regrId": "Test",
+        "regrNm": "Test User",
+        "modrId": "Test",
+        "modrNm": "Test User",
+        "receipt": {
+            "custTin": "A123456789Z",
+            "custMblNo": "254712345678",
+            "rcptPbctDt": "20260208143000",
+            "trdeNm": "Test Store",
+            "adrs": "123 Main Street, Nairobi",
+            "topMsg": "Thank You!",
+            "btmMsg": "Visit Again",
+            "prchrAcptcYn": "N"
+        },
+        "itemList": [
+            {
+                "itemSeq": 1,
+                "itemClsCd": "5059690800",
+                "itemCd": "KE1NTXU0000001",
+                "itemNm": "Test Item 1",
+                "bcd": "1234567890123",
+                "pkgUnitCd": "NT",
+                "pkg": 2.00,
+                "qtyUnitCd": "U",
+                "qty": 2.00,
+                "prc": 3500.00,
+                "splyAmt": 7000.00,
+                "dcRt": 0.00,
+                "dcAmt": 0.00,
+                "isrccCd": None,
+                "isrccNm": None,
+                "isrcRt": None,
+                "isrcAmt": None,
+                "taxTyCd": "B",
+                "taxblAmt": 7000.00,
+                "taxAmt": 1068.00,
+                "totAmt": 8068.00
+            },
+            {
+                "itemSeq": 2,
+                "itemClsCd": "5022110801",
+                "itemCd": "KE1NTXU0000002",
+                "itemNm": "Test Item 2",
+                "bcd": "9876543210987",
+                "pkgUnitCd": "NT",
+                "pkg": 1.00,
+                "qtyUnitCd": "U",
+                "qty": 1.00,
+                "prc": 3500.00,
+                "splyAmt": 3500.00,
+                "dcRt": 0.00,
+                "dcAmt": 0.00,
+                "isrccCd": None,
+                "isrccNm": None,
+                "isrcRt": None,
+                "isrcAmt": None,
+                "taxTyCd": "B",
+                "taxblAmt": 3500.00,
+                "taxAmt": 534.00,
+                "totAmt": 4034.00
+            }
+        ]
+    }
+    
+    # Attempt to save sales transaction
+    response = etims.save_sales_transaction(sales_data)
+    
+    # Validate response
+    if response.get('resultCd') == '000':
+        print("✅ Sales transaction saved successfully")
+        print(f"   Receipt Number: {response.get('data', {}).get('curRcptNo', 'N/A')}")
+        print(f"   Total Receipts: {response.get('data', {}).get('totRcptNo', 'N/A')}")
+        print(f"   SDC DateTime: {response.get('data', {}).get('sdcDateTime', 'N/A')}")
+        print(f"   Receipt Signature: {response.get('data', {}).get('rcptSign', 'N/A')}")
+    else:
+        abort(f"Failed to save sales transaction: {response.get('resultMsg', 'Unknown error')}")
+        
+except ApiException as e:
+    print(f"❌ Sales transaction save failed (API Error): {e}")
+    print(f"   Error Code: {e.code}")
+    print(f"   Error Message: {e.message}")
+except ValidationException as e:
+    print(f"❌ Validation failed: {e}")
+except Exception as e:
+    print(f"❌ Unexpected error: {type(e).__name__}: {str(e)}")
+
+print("\n" + "="*60)
+print("🎉 All steps completed successfully!")
+print("="*60)

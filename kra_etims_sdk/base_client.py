@@ -20,7 +20,7 @@ class BaseClient:
         'selectItemClsList': '/selectItemClsList',
         'selectItemList': '/selectItemList',
         'saveItem': '/saveItem',
-        'SaveItemComposition': '/saveItemComposition',
+        'saveItemComposition': '/saveItemComposition',
 
         # BRANCH / CUSTOMER
         'selectBhfList': '/selectBhfList',
@@ -33,7 +33,7 @@ class BaseClient:
         'updateImportItem': '/updateImportItem',
 
         # SALES / PURCHASES
-        'TrnsSalesSaveWrReq': '/saveTrnsSalesOsdc',
+        'saveTrnsSalesOsdc': '/saveTrnsSalesOsdc',
         'selectTrnsPurchaseSalesList': '/selectTrnsPurchaseSalesList',
         'insertTrnsPurchase': '/insertTrnsPurchase',
 

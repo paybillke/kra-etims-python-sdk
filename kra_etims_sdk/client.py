@@ -14,7 +14,7 @@ class EtimsClient(BaseClient):
     # INITIALIZATION
     # -----------------------------
     def select_init_osdc_info(self, data: dict) -> dict:
-        return self.post("selectInitOsdcInfo", self._validate(data, "initialization"))
+        return self.post("selectInitOsdcInfo", self._validate(data, "selectInitOsdcInfo"))
 
     # -----------------------------
     # CODE LISTS
@@ -26,19 +26,19 @@ class EtimsClient(BaseClient):
     # CUSTOMER / BRANCH
     # -----------------------------
     def select_customer(self, data: dict) -> dict:
-        return self.post("selectCustomer", self._validate(data, "custSearchReq"))
+        return self.post("selectCustomer", self._validate(data, "selectCustomer"))
 
     def select_branches(self, data: dict) -> dict:
         return self.post("selectBhfList", self._validate(data, "lastReqOnly"))
 
     def save_branch_customer(self, data: dict) -> dict:
-        return self.post("saveBhfCustomer", self._validate(data, "branchCustomer"))
+        return self.post("saveBhfCustomer", self._validate(data, "saveBhfCustomer"))
 
     def save_branch_user(self, data: dict) -> dict:
-        return self.post("saveBhfUser", self._validate(data, "branchUser"))
+        return self.post("saveBhfUser", self._validate(data, "saveBhfUser"))
 
     def save_branch_insurance(self, data: dict) -> dict:
-        return self.post("saveBhfInsurance", self._validate(data, "branchInsurance"))
+        return self.post("saveBhfInsurance", self._validate(data, "saveBhfInsurance"))
 
     # -----------------------------
     # ITEM
@@ -53,7 +53,7 @@ class EtimsClient(BaseClient):
         return self.post("saveItem", self._validate(data, "saveItem"))
 
     def save_item_composition(self, data: dict) -> dict:
-        return self.post("SaveItemComposition", self._validate(data, "itemComposition"))
+        return self.post("saveItemComposition", self._validate(data, "saveItemComposition"))
 
     # -----------------------------
     # IMPORTED ITEMS
@@ -74,7 +74,7 @@ class EtimsClient(BaseClient):
         return self.post("insertTrnsPurchase", self._validate(data, "insertTrnsPurchase"))
 
     def save_sales_transaction(self, data: dict) -> dict:
-        return self.post("TrnsSalesSaveWrReq", self._validate(data, "lastReqOnly"))
+        return self.post("saveTrnsSalesOsdc", self._validate(data, "saveTrnsSalesOsdc"))
 
     # -----------------------------
     # STOCK
@@ -83,10 +83,10 @@ class EtimsClient(BaseClient):
         return self.post("selectStockMoveList", self._validate(data, "lastReqOnly"))
 
     def save_stock_io(self, data: dict) -> dict:
-        return self.post("insertStockIO", self._validate(data, "saveStockIO"))
+        return self.post("insertStockIO", self._validate(data, "insertStockIO"))
 
     def save_stock_master(self, data: dict) -> dict:
-        return self.post("saveStockMaster", self._validate(data, "stockMaster"))
+        return self.post("saveStockMaster", self._validate(data, "saveStockMaster"))
 
     # -----------------------------
     # NOTICES
