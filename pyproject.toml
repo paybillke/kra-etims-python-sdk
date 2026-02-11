@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kra-etims-sdk"
-version = "0.1.4"
-description = "Python SDK for KRA eTIMS OSCU API"
+version = "0.1.5"
+description = "Python SDK for KRA eTIMS OSCU/VSCU API"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
   { name = "Emmanuel Bartile" }
 ]
-keywords = ["KRA", "eTIMS", "OSCU", "Kenya", "Tax"]
+keywords = ["KRA", "eTIMS", "OSCU", "VSCU", "Kenya", "Tax"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",

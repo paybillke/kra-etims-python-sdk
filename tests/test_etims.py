@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 # Import your SDK classes (you must implement these separately)
-from kra_etims_sdk.auth import AuthClient
-from kra_etims_sdk.client import EtimsClient
+from kra_etims_sdk.oauth import AuthOClient
+from kra_etims_sdk.oclient import EtimsOClient
 from kra_etims_sdk.exceptions import ApiException, AuthenticationException, ValidationException
 
 # Helper functions
@@ -37,13 +37,13 @@ config = {
     'cache_file': os.path.join(tempfile.gettempdir(), 'kra_etims_token.json'),
     'auth': {
         'sbx': {
-            'token_url': 'https://sbx.kra.go.ke/v1/token/generate',
+            'consumer_key': os.getenv('KRA_CONSUMER_KEY'),
+            'consumer_secret': os.getenv('KRA_CONSUMER_SECRET'),
+        },
+        'prod': {
             'consumer_key': os.getenv('KRA_CONSUMER_KEY'),
             'consumer_secret': os.getenv('KRA_CONSUMER_SECRET'),
         }
-    },
-    'api': {
-        'sbx': {'base_url': 'https://etims-api-sbx.kra.go.ke/etims-api'}
     },
     'http': {'timeout': 30},
     'oscu': {
@@ -55,8 +55,8 @@ config = {
 }
 
 # ---------------------------- Bootstrap SDK ----------------------------
-auth = AuthClient(config)
-etims = EtimsClient(config, auth)
+auth = AuthOClient(config)
+etims = EtimsOClient(config, auth)
 
 # ---------------------------- STEP 1: AUTH ----------------------------
 header_line('STEP 1: AUTHENTICATION')

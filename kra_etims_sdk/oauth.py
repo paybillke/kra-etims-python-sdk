@@ -2,7 +2,7 @@ import base64, json, time, os, requests
 from .exceptions import AuthenticationException
 
 
-class AuthClient:
+class AuthOClient:
     def __init__(self, config: dict):
         self.config = config
         self.cache_file = config.get("cache_file", "/tmp/kra_etims_token.json")
@@ -25,7 +25,13 @@ class AuthClient:
         env = self.config["env"]
         auth = self.config["auth"][env]
 
-        url = f"{auth['token_url']}?grant_type=client_credentials"
+        if env == "sbx":
+            token_url = "https://sbx.kra.go.ke/v1/token/generate"
+        else:
+            token_url = "https://api.kra.go.ke/v1/token/generate"
+
+        url = f"{token_url}?grant_type=client_credentials"
+
         headers = {
             "Authorization": "Basic " + base64.b64encode(
                 f"{auth['consumer_key']}:{auth['consumer_secret']}".encode()

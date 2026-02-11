@@ -2,7 +2,7 @@ import requests
 from .exceptions import ApiException, AuthenticationException
 
 
-class BaseClient:
+class BaseOClient:
     endpoints = {
         # INITIALIZATION
         'selectInitOsdcInfo': '/selectInitOsdcInfo',
@@ -47,10 +47,16 @@ class BaseClient:
         self.config = config
         self.auth = auth
 
-    def base_url(self):
-        env = self.config["env"]
-        return self.config["api"][env]["base_url"].rstrip("/")
+    def base_url(self) -> str:
+        env = self.config.get("env")
 
+        if env == "sbx":
+            url = "https://etims-api-sbx.kra.go.ke/etims-api"
+        else:
+            url = "https://etims-api.kra.go.ke/etims-api"
+
+        return url.rstrip("/").strip()
+    
     def timeout(self):
         return self.config.get("http", {}).get("timeout", 30)
 
@@ -129,11 +135,35 @@ class BaseClient:
         except Exception:
             raise ApiException(response.text, response.status_code)
 
-        # HTTP errors
-        if 200 <= response.status_code < 300:
-            return json_data
+        result_cd = json_data.get("resultCd")
+        result_msg = json_data.get("resultMsg", "Unknown API response")
 
+        # ---------------------------------
+        # HTTP-level handling
+        # ---------------------------------
         if response.status_code == 401:
             raise AuthenticationException("Unauthorized: Invalid or expired token")
 
-        return json_data
+        if not (200 <= response.status_code < 300):
+            fault_msg = json_data.get("fault", {}).get("faultstring", response.text)
+            raise ApiException(fault_msg, response.status_code)
+
+        # ---------------------------------
+        # Business-level handling
+        # ---------------------------------
+        if result_cd is None:
+            return json_data  # Some endpoints may not return resultCd
+
+        if result_cd == "000" or result_cd == "001":
+            return json_data  # ✅ Success
+
+        # Client errors (891–899)
+        if "891" <= result_cd <= "899":
+            raise ApiException(f"Client Error ({result_cd}): {result_msg}", 400)
+
+        # Server errors (900+)
+        if result_cd >= "900":
+            raise ApiException(f"Server Error ({result_cd}): {result_msg}", 500)
+
+        # Fallback business error
+        raise ApiException(f"Business Error ({result_cd}): {result_msg}", 400)

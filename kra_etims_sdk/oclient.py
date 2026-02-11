@@ -1,8 +1,8 @@
-from .base_client import BaseClient
+from .base_oclient import BaseOClient
 from .validator import Validator
 
 
-class EtimsClient(BaseClient):
+class EtimsOClient(BaseOClient):
     def __init__(self, config: dict, auth):
         super().__init__(config, auth)
         self.validator = Validator()
