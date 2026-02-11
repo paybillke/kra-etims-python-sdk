@@ -16,7 +16,7 @@
 ![Postman Compliant](https://img.shields.io/badge/Postman-Compliant-FF6C37?logo=postman)
 ![Pytest Tested](https://img.shields.io/badge/Tests-Pytest-3776AB?logo=pytest)
 
-A production-ready **Python SDK** for integrating with the Kenya Revenue Authority (KRA) **eTIMS OSCU** (Online Sales Control Unit) and **eTIMS VSCU** (Virtual Sales Control Unit) API. Built to match the official Postman collection specifications with strict header compliance, token management, and comprehensive payload validation.
+A production-ready **Python SDK** for integrating with the Kenya Revenue Authority (KRA) **eTIMS OSCU** (Online Sales Control Unit) and **eTIMS VSCU** (Virtual Sales Control Unit) API. Built in accordance with the official KRA specifications, token management, and comprehensive payload validation.
 
 **Official KRA Specifications**  
 📄 OSCU Specification (v2.0): https://www.kra.go.ke/images/publications/OSCU_Specification_Document_v2.0.pdf  
